@@ -1,0 +1,22 @@
+{
+  "breeding_matrix_config": {
+    "species": "Pycnogonum_littorale_profile",
+    "morphological_constraints": {
+      "functional_gonopores": 6,
+      "mean_egg_diameter_mm": 0.08,
+      "femur_volume_mm3": 1.45
+    },
+    "leslie_matrix_coefficients": {
+      "fecundity_adult_f": 450.0,
+      "fecundity_brooding_f": 120.0,
+      "survival_larva_to_juv": 0.05,
+      "survival_juv_to_adult": 0.45,
+      "adult_retention_rate": 0.88
+    },
+    "environmental_sensitivities": {
+      "optimal_breeding_temp_c": 14.0,
+      "thermal_exponential_limit_q10": 2.4,
+      "turbulence_fertilization_penalty_exponent": 1.8
+    }
+  }
+}
