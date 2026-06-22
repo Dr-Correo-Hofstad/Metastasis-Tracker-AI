@@ -24,6 +24,158 @@ class PatientSimulationEngine:
         self.total_blood_volume = 0.0656 * (self.weight ** 1.02) * self.chi
         self.cardiac_output = (self.bsa * 3.0 / 60.0) * (self.chi ** 0.5) # Liters per second
 
+        import math
+
+class AdvancedMetabolicEngine:
+    def __init__(self, height_cm: float, weight_kg: float, body_build: str, hydration_level: float):
+        self.height_m = height_cm / 100.0
+        self.height_cm = height_cm
+        self.weight = weight_kg
+        self.build = body_build.lower()
+        self.chi = hydration_level  # Hydration tracking constant
+        
+        # Human baseline constants
+        self.bsa = 0.007184 * (self.height_cm ** 0.725) * (self.weight ** 0.425)
+        self.cardiac_output = (self.bsa * 3.0 / 60.0) * (self.chi ** 0.5) # L/sec
+        self.hb = 150.0  # Hemoglobin grams/L
+        
+        # Calculate Kidney volume early to map renal retention dependencies
+        self.kidney_volume_cm3 = 0.0003 * self.weight + 124.0 # Baseline single kidney
+        
+    def calculate_renal_bicarbonate_handling(self, plasma_hco3_mEq_L: float) -> dict:
+        """
+        Links calculated kidney volume dimensions directly to bicarbonate retention 
+        and filtration capacity under homeostatic conditions.
+        """
+        # GFR scales linearly with total functioning renal parenchymal volume
+        total_renal_volume = self.kidney_volume_cm3 * 2.0
+        gfr_L_min = 0.00055 * total_renal_volume  # ~120 mL/min standard baseline
+        
+        # Bicarbonate filtration rate calculation
+        hco3_filtered_rate = gfr_L_min * plasma_hco3_mEq_L  # mEq/min
+        
+        # Transport Maximum (Tm) scales with structural cellular mass of nephrons
+        tm_hco3 = 0.022 * total_renal_volume  # mEq/min limit
+        
+        # Mass balance evaluation
+        hco3_reabsorbed = min(hco3_filtered_rate, tm_hco3)
+        hco3_excreted = max(0.0, hco3_filtered_rate - tm_hco3)
+        retention_efficiency = (hco3_reabsorbed / hco3_filtered_rate) * 100.0 if hco3_filtered_rate > 0 else 100.0
+        
+        return {
+            "total_kidney_volume_cm3": total_renal_volume,
+            "calculated_gfr_L_min": gfr_L_min,
+            "bicarbonate_filtered_mEq_min": hco3_filtered_rate,
+            "renal_transport_maximum_tm": tm_hco3,
+            "bicarbonate_reabsorbed_mEq_min": hco3_reabsorbed,
+            "bicarbonate_excreted_urine_mEq_min": hco3_excreted,
+            "retention_efficiency_percent": retention_efficiency
+        }
+
+    def compute_bohr_oxygen_offloading(self, generation: int, ph: float, po2_mmHg: float) -> dict:
+        """
+        Applies a modified Hill Equation with dynamic P50 shifts to calculate 
+        localized oxygen saturation and offloading capacity along the vascular paths.
+        """
+        # Estimate regional pCO2 based on generation transition (arterial to capillary)
+        pco2_z = 40.0 + (6.0 * (generation / 30.0))  # Scales 40mmHg to 46mmHg
+        temp_c = 37.0
+        
+        # The Bohr Effect Formula: Shift P50 from standard baseline (26.8 mmHg)
+        pH_delta = ph - 7.40
+        pco2_delta = math.log10(pco2_z / 40.0)
+        
+        p50_shifted = 26.8 * math.pow(10, (-0.48 * pH_delta) + (0.06 * pco2_delta) + (0.024 * (temp_c - 37.0)))
+        
+        # Hill equation configuration for dynamic context execution
+        hill_n = 2.7
+        if po2_mmHg <= 0:
+            so2 = 0.0
+        else:
+            so2 = math.pow(po2_mmHg, hill_n) / (math.pow(po2_mmHg, hill_n) + math.pow(p50_shifted, hill_n))
+            
+        # Total unbound gas availability metric calculation
+        oxygen_content_mL_L = (1.34 * self.hb * so2) + (0.003 * po2_mmHg)
+        
+        return {
+            "vessel_generation": generation,
+            "local_p50_mmHg": p50_shifted,
+            "oxygen_saturation_percent": so2 * 100.0,
+            "total_oxygen_content_mL_L": oxygen_content_mL_L
+        }
+
+    def simulate_strenuous_exertion_lactate_curve(self, exertion_intensity: float) -> dict:
+        """
+        Calculates dynamic blood lactic acid production curves during exercise 
+        and updates microvascular blood thickness overrides.
+        
+        :param exertion_intensity: Factor scaling from 0.0 (rest) to 1.0 (maximal failure)
+        """
+        exertion_intensity = max(0.0, min(1.0, exertion_intensity))
+        
+        # Anaerobic Threshold sigmoidal transition profile modeling
+        j_basal = 1.0   # mmol/L baseline resting lactate pool
+        j_max = 18.0    # Maximal anaerobic cap
+        k_slope = 12.0  # Steeper inflection past threshold boundaries
+        omega_threshold = 0.65  # Standard human aerobic limit point
+        
+        # Logistic sigmoidal curve execution
+        lactate_mmol_L = j_basal + (j_max / (1.0 + math.exp(-k_slope * (exertion_intensity - omega_threshold))))
+        
+        # pH reduction secondary to anaerobic lactic proton production accumulation
+        ph_drop_mod = 0.3 * (lactate_mmol_L / (j_basal + j_max))
+        systemic_arterial_ph = 7.40 - ph_drop_mod
+        
+        # Viscosity multiplier coupling factor tracking erythrocyte stiffness shifts
+        erythrocyte_rigidity_multiplier = 1.0 + (0.022 * lactate_mmol_L)
+        
+        return {
+            "exertion_workload_factor": exertion_intensity,
+            "circulating_lactate_mmol_L": lactate_mmol_L,
+            "induced_acidosis_ph_drop": ph_drop_mod,
+            "projected_arterial_ph": systemic_arterial_ph,
+            "blood_viscosity_rigidity_multiplier": erythrocyte_rigidity_multiplier
+        }
+
+# =====================================================================
+# Pipeline Diagnostics Sandbox Validation
+# =====================================================================
+if __name__ == "__main__":
+    # Initialize engine for an average athletic build patient
+    engine = AdvancedMetabolicEngine(height_cm=180.0, weight_kg=78.0, body_build="mesomorph", hydration_level=1.0)
+    
+    print("=========================================================================")
+    print("PHYSIOLOGICAL MODEL UPGRADE BREAKDOWNS")
+    print("=========================================================================\n")
+    
+    # 1. Test Renal Retention Linked directly to Kidney Dimensions
+    print("--- 1. RENAL BICARBONATE HANDLING AND RETENTION MATRIX ---")
+    renal_data = engine.calculate_renal_bicarbonate_handling(plasma_hco3_mEq_L=28.0) # High bicarbonate pool
+    print(f" Total Combined Kidney Volume:  {renal_data['total_kidney_volume_cm3']:.1f} cm³")
+    print(f" Glomerular Filtration (GFR):   {renal_data['calculated_gfr_L_min']*1000:.1f} mL/min")
+    print(f" Reabsorption Capacity (Tm):    {renal_data['renal_transport_maximum_tm']:.3f} mEq/min")
+    print(f" Urinary Bicarbonate Waste:     {renal_data['bicarbonate_excreted_urine_mEq_min']:.3f} mEq/min")
+    print(f" Systemic Retention Efficiency: {renal_data['retention_efficiency_percent']:.1f}%\n")
+    
+    # 2. Test Bohr Effect Oxy-Saturation Curves across Generations
+    print("--- 2. GENERATIONAL BOHR EFFECT SATURATION SHIFTS ---")
+    # Simulate high oxygen drop arriving inside acidic muscle tissue capillaries (Gen 30)
+    arterial_node = engine.compute_bohr_oxygen_offloading(generation=0, ph=7.41, po2_mmHg=95.0)
+    capillary_node = engine.compute_bohr_oxygen_offloading(generation=30, ph=7.32, po2_mmHg=38.0)
+    
+    print(f" Aorta (Gen 0)   -> Local P50: {arterial_node['local_p50_mmHg']:.1f} mmHg | Saturation: {arterial_node['oxygen_saturation_percent']:.1f}%")
+    print(f" Capillary (Gen 30) -> Local P50: {capillary_node['local_p50_mmHg']:.1f} mmHg | Saturation: {capillary_node['oxygen_saturation_percent']:.1f}% (Bohr Shift Offloading Driven)")
+    print(f" Total Gas Delivered to Tissue Space: {arterial_node['total_oxygen_content_mL_L'] - capillary_node['total_oxygen_content_mL_L']:.2f} mL O2 per Liter of Blood Flow\n")
+    
+    # 3. Test Anaerobic Exertion Spikes and Viscosity Overrides
+    print("--- 3. ANAEROBIC LACTIC ACID CURVE OVER EXERTION FIELDS ---")
+    resting_metrics = engine.simulate_strenuous_exertion_lactate_curve(exertion_intensity=0.1)
+    stressed_metrics = engine.simulate_strenuous_exertion_lactate_curve(exertion_intensity=0.85) # High exercise intensity
+    
+    print(f" Rest Exertion (10%)  -> Lactate: {resting_metrics['circulating_lactate_mmol_L']:.2f} mmol/L | Blood pH: {resting_metrics['projected_arterial_ph']:.2f}")
+    print(f" Peak Exertion (85%) -> Lactate: {stressed_metrics['circulating_lactate_mmol_L']:.2f} mmol/L | Blood pH: {stressed_metrics['projected_arterial_ph']:.2f}")
+    print(f" Erythrocyte Rigidity Vector: Viscosity scaled up by factor of * {stressed_metrics['blood_viscosity_rigidity_multiplier']:.3f} inside systemic microcirculatory paths.")
+
         def generate_systemic_ph_matrix(self, salivary_ph: float) -> dict:
         """
         Estimates localized pH levels across all vascular generations, airway trees, 
