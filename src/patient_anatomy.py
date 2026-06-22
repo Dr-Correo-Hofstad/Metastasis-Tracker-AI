@@ -24,6 +24,91 @@ class PatientSimulationEngine:
         self.total_blood_volume = 0.0656 * (self.weight ** 1.02) * self.chi
         self.cardiac_output = (self.bsa * 3.0 / 60.0) * (self.chi ** 0.5) # Liters per second
 
+        def generate_systemic_ph_matrix(self, salivary_ph: float) -> dict:
+        """
+        Estimates localized pH levels across all vascular generations, airway trees, 
+        and organs using a baseline salivary pH reading.
+        
+        :param salivary_ph: Measured pH from a standard oral swab (typically 6.2 - 7.6)
+        :return: Comprehensive anatomical dictionary containing mapped pH values
+        """
+        # Clamp input to physiolgically viable limits to avoid engine crashes
+        salivary_ph = max(5.5, min(8.0, salivary_ph))
+        
+        # Step 1: Calibrate central arterial blood pH baseline
+        # Healthy reference baseline shift: Saliva 6.7 -> Arterial Blood 7.40
+        blood_baseline_ph = 7.40 + 0.5 * (salivary_ph - 6.7)
+        
+        # Tight homeostatic clamp checking to simulate high-level biological buffering
+        blood_baseline_ph = max(6.8, min(7.8, blood_baseline_ph))
+        
+        # Step 2: Compute Circulatory Path pH Degradation (Arterial vs. Venous Shift)
+        # As blood drops down systemic trees, metabolic pCO2 increases, dropping pH.
+        systemic_ph_profile = []
+        pulmonary_ph_profile = []
+        
+        for z in range(31):
+            # Systemic loop starts at clean arterial baseline, shifts toward venous (~ -0.05 pH) at capillary line
+            systemic_z_ph = blood_baseline_ph - (0.05 * (z / 30.0))
+            systemic_ph_profile.append({
+                "generation": z,
+                "vessel_class": "Arterial" if z < 20 else ("Capillary" if z == 30 else "Arteriolar"),
+                "estimated_ph": round(systemic_z_ph, 3)
+            })
+            
+            # Pulmonary loop carries acidic venous return, purging CO2 as it climbs to alveolar gas interface
+            pulmonary_z_ph = (blood_baseline_ph - 0.05) + (0.05 * (z / 30.0))
+            pulmonary_ph_profile.append({
+                "generation": z,
+                "vessel_class": "Pulmonary Venous Transition" if z > 20 else "Pulmonary Arterial Trunk",
+                "estimated_ph": round(pulmonary_z_ph, 3)
+            })
+            
+        # Step 3: Compute Airway Path pH Profile (Mucosal Surface / Fluid Lining Layer)
+        # Airway surface liquid (ASL) drops in pH from the humid trachea down to terminal gas exchange centers.
+        airway_ph_profile = []
+        # Upper trachea aligns closely with oral/salivary baseline environment
+        tracheal_base_ph = salivary_ph 
+        
+        for z in range(24):
+            # ASL becomes more acidic down the tree due to local cellular metabolic acid secretion
+            airway_z_ph = tracheal_base_ph - (0.4 * (z / 23.0))
+            airway_ph_profile.append({
+                "generation": z,
+                "zone": "Conducting" if z <= 16 else "Respiratory",
+                "estimated_ph": round(airway_z_ph, 3)
+            })
+            
+        # Step 4: Map Organ Interstitial Matrix Microenvironments
+        # Config values scale relative to current central blood buffering capabilities
+        organ_ph_shifts = {
+            "heart": -0.04,        # Myocardium matches central arterial blood closely
+            "brain": -0.02,        # Protected strictly by the blood-brain barrier (BBB)
+            "liver": -0.15,        # Highly metabolic hepatic tissue generates structural lactic/keto acids
+            "kidney_each": -0.20,   # Renal parenchymal cells actively pump and excrete hydronium ions (H+)
+            "spleen": -0.08,       # Sluggish pooling loops increase standard venous acid holding pools
+            "pancreas": 0.35        # Alkaline outlier due to high production of bicarbonate fluids (HCO3-)
+        }
+        
+        organ_ph_matrix = {}
+        for organ_name, shift in organ_ph_shifts.items():
+            estimated_organ_ph = blood_baseline_ph + shift
+            organ_ph_matrix[organ_name] = {
+                "estimated_interstitial_ph": round(estimated_organ_ph, 3),
+                "cellular_state": "Normal Buffering" if 7.2 <= estimated_organ_ph <= 7.5 else "Acid Stress Alert"
+            }
+            
+        return {
+            "input_salivary_ph": salivary_ph,
+            "calculated_arterial_baseline_ph": round(blood_baseline_ph, 3),
+            "circulatory_paths": {
+                "systemic_loop": systemic_ph_profile,
+                "pulmonary_loop": pulmonary_ph_profile
+            },
+            "airway_paths": airway_ph_profile,
+            "organ_matrix": organ_ph_matrix
+        }
+
     def _calculate_lbm(self) -> float:
         # Boer formula for lean body mass
         if self.build == "ectomorph":
