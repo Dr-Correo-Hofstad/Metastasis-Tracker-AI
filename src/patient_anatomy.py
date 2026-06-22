@@ -619,6 +619,166 @@ if __name__ == "__main__":
             "capillary_starling_forces": self.calculate_starling_forces(capillaries)
         }
 
+import math
+
+class AdvancedClinicalImmunoEngine:
+    def __init__(self, wbc_count_cells_uL: float, wbc_baseline_health: float = 1.0):
+        """
+        :param wbc_count_cells_uL: Total white blood cell count (Clinical normal: 4000 - 11000)
+        :param wbc_baseline_health: Multiplier reflecting leukocyte cytotoxicity health index
+        """
+        self.wbc_pool = wbc_count_cells_uL
+        self.imm_efficiency = 1.45e-5 * wbc_baseline_health
+        self.v_critical = 0.005  # 5 mm/s - velocity threshold below which leukocyte rolling spikes
+
+    def calculate_leukocyte_ctc_clearance(self, generation: int, q_seg_m3_s: float, radius_m: float, input_ctc_count: int) -> dict:
+        """
+        Calculates leukocyte-mediated CTC destruction rates by mapping cell collision vectors
+        directly to local microvascular fluid velocity drops.
+        """
+        # Calculate advection cross-sectional velocity
+        area_m2 = math.pi * (radius_m ** 2)
+        velocity_m_s = q_seg_m3_s / area_m2 if area_m2 > 0 else 0.5
+        
+        # Fluid-velocity collision interaction formula
+        # As velocity drops, contact duration spikes, increasing killing odds asymptotically
+        killing_probability = self.imm_efficiency * self.wbc_pool * (1.0 - (velocity_m_s / (velocity_m_s + self.v_critical)))
+        killing_probability = min(0.95, max(0.0, killing_probability)) # Safeguard boundaries
+        
+        cells_destroyed = int(input_ctc_count * killing_probability)
+        cells_survived = input_ctc_count - cells_destroyed
+        
+        return {
+            "vessel_generation": generation,
+            "calculated_fluid_velocity_m_s": velocity_m_s,
+            "leukocyte_killing_efficiency_percent": killing_probability * 100.0,
+            "ctcs_destroyed_by_immune_cells": cells_destroyed,
+            "ctcs_surviving_transit": cells_survived
+        }
+
+    def simulate_ph_recovery_trajectory(self, starting_acid_ph: float, calculation_steps_min: int = 120) -> dict:
+        """
+        Solves the compartmental differential equation loop to project the exact long-term 
+        recovery window of tissue pH back to homeostatic norms (7.40) over time.
+        """
+        current_ph = starting_acid_ph
+        target_ph = 7.40
+        dt = 1.0  # 1-minute step increments for standard numeric integration
+        
+        # Kinetic properties for non-linear ion pumping mechanics
+        v_max_pump = 0.08      # Maximum renal/cellular proton extrusion rate per minute
+        k_m_affinity = 0.02    # Affinity constant for structural proton capture loops
+        j_basal_acid = 0.015   # Continuous basal cellular acid production drop
+        
+        time_elapsed_minutes = 0
+        ph_history_curve = []
+        
+        # Loop until baseline homeostatic clamp equilibrium is achieved or cap limits hit
+        while current_ph < target_ph and time_elapsed_minutes < calculation_steps_min:
+            # Step 1: Translate logarithmic pH down to baseline absolute proton molarity vector
+            h_concentration = math.pow(10, -current_ph) * 1e6  # Arbitrary scaling units
+            
+            # Step 2: Calculate metabolic delta via non-linear Michaelis-Menten dynamics
+            pump_extrusion = (v_max_pump * h_concentration) / (k_m_affinity + h_concentration)
+            delta_h = -pump_extrusion + j_basal_acid
+            
+            # Step 3: Advance state step and convert tracking scalar back to pH units
+            h_concentration += delta_h * dt
+            h_concentration = max(1e-8, hco3_filtered_rate := h_concentration)
+            current_ph = -math.log10(h_concentration / 1e6)
+            current_ph = min(7.40, current_ph)  # Bound cap limit
+            
+            time_elapsed_minutes += int(dt)
+            ph_history_curve.append((time_elapsed_minutes, round(current_ph, 3)))
+            
+        return {
+            "initial_acidosis_ph": starting_acid_ph,
+            "total_recovery_duration_minutes": time_elapsed_minutes,
+            "recovery_equilibrium_achieved": current_ph >= target_ph,
+            "final_stabilized_ph": round(current_ph, 3),
+            "trajectory_curve_sample": ph_history_curve[:5] # Returns initial timeline path vectors
+        }
+
+    @staticmethod
+    def ingest_clinical_chart_profile(json_ehr_data: dict) -> dict:
+        """
+        Integration hook that parses automated clinical health charts or EHR JSON 
+        and extracts standardized engine configuration variables.
+        """
+        # Extract basic metrics
+        height = json_ehr_data.get("anthropometrics", {}).get("height_cm", 175.0)
+        weight = json_ehr_data.get("anthropometrics", {}).get("weight_kg", 70.0)
+        build = json_ehr_data.get("anthropometrics", {}).get("build_type", "mesomorph")
+        
+        # Clinical Conversion logic: Derive Hydration factor from serum sodium/hematocrit panels
+        serum_na = json_ehr_data.get("lab_panels", {}).get("serum_sodium_mEq_L", 140.0)
+        hct_percent = json_ehr_data.get("lab_panels", {}).get("hematocrit_percent", 45.0)
+        
+        # Hypernatremia / elevated hematocrit indicates high hemoconcentration (dehydration)
+        if serum_na > 145.0 or hct_percent > 50.0:
+            hydration_level = 0.85  # Dehydrated scaling
+        elif serum_na < 135.0:
+            hydration_level = 1.15  # Fluid overload hemodilution scaling
+        else:
+            hydration_level = 1.0   # Perfectly balanced baseline
+            
+        wbc = json_ehr_data.get("lab_panels", {}).get("wbc_count_uL", 6500.0)
+        oral_ph = json_ehr_data.get("lab_panels", {}).get("salivary_ph_test", 6.7)
+        
+        return {
+            "engine_ready_height_cm": height,
+            "engine_ready_weight_kg": weight,
+            "engine_ready_build": build,
+            "derived_hydration_factor": hydration_level,
+            "wbc_pool_uL": wbc,
+            "oral_baseline_ph": oral_ph
+        }
+
+# =====================================================================
+# Full Operational Loop Verification Sandbox
+# =====================================================================
+if __name__ == "__main__":
+    print("=========================================================================")
+    print("IMMUNOLOGICAL, KINETIC RECOVERY, AND CLINICAL INGESTION VERIFICATION")
+    print("=========================================================================\n")
+    
+    # 1. Test Clinical Chart Ingestion parsing hook
+    mock_clinical_chart = {
+        "patient_id": "EHR-2026-9904",
+        "anthropometrics": {"height_cm": 182.0, "weight_kg": 85.0, "build_type": "ectomorph"},
+        "lab_panels": {
+            "serum_sodium_mEq_L": 149.2,   # High Sodium (Indicates Dehydration context)
+            "hematocrit_percent": 52.1,    # High Hematocrit
+            "wbc_count_uL": 8500.0,        # Solid immune pool status
+            "salivary_ph_test": 6.2        # Acidic oral status
+        }
+    }
+    
+    parsed_config = AdvancedClinicalImmunoEngine.ingest_clinical_chart_profile(mock_clinical_chart)
+    print("--- 1. EHR CLINICAL PARSING INGESTION CONFIGURATION ---")
+    print(f" Ingested Height: {parsed_config['engine_ready_height_cm']} cm | Ingested Weight: {parsed_config['engine_ready_weight_kg']} kg")
+    print(f" Auto-Derived Engine Hydration Variable (𝜒): {parsed_config['derived_hydration_factor']} (Correctly Flags Dehydration Profile)\n")
+    
+    # 2. Test Immuno-Vascular Clearance Execution Loop
+    # Instantiate engine using the newly parsed patient WBC parameters
+    immuno_module = AdvancedClinicalImmunoEngine(wbc_count_cells_uL=parsed_config["wbc_pool_uL"])
+    
+    # Simulate high flow (Gen 2 - Main branch) vs stagnant low-flow capillary drop (Gen 30)
+    high_flow_immune_check = immuno_module.calculate_leukocyte_ctc_clearance(generation=2, q_seg_m3_s=0.00005, radius_m=0.004, input_ctc_count=1000)
+    low_flow_immune_check = immuno_module.calculate_leukocyte_ctc_clearance(generation=30, q_seg_m3_s=1e-13, radius_m=4.5e-6, input_ctc_count=1000)
+    
+    print("--- 2. LEUKOCYTE IMMUNE TRANSIT CLEARANCE MATRIX ---")
+    print(f" Macrovessel Gen 2  -> Velocity: {high_flow_immune_check['calculated_fluid_velocity_m_s']:.4f} m/s | Immune Destruction Rate: {high_flow_immune_check['leukocyte_killing_efficiency_percent']:.2f}%")
+    print(f" Capillary Gen 30   -> Velocity: {low_flow_immune_check['calculated_fluid_velocity_m_s']:.4f} m/s | Immune Destruction Rate: {low_flow_immune_check['leukocyte_killing_efficiency_percent']:.2f}% (Velocity Drop Margination Boosted)\n")
+    
+    # 3. Test Long-Term Acidosis Recovery ODE Curve Projection
+    print("--- 3. LONG-TERM TISSUE PH EQUILIBRIUM ODE SIMULATION ---")
+    recovery_report = immuno_module.simulate_ph_recovery_trajectory(starting_acid_ph=6.95)
+    print(f" Initial Tissue Crisis State: {recovery_report['initial_acidosis_ph']} pH")
+    print(f" Target Recovery Achieved:   {recovery_report['recovery_equilibrium_achieved']}")
+    print(f" Calculated Active Recovery Duration: {recovery_report['total_recovery_duration_minutes']} minutes to hit normal 7.40 limits.")
+    print(f" Timeline Curve Samples (Min, pH):   {recovery_report['trajectory_curve_sample']}")
+
 # =====================================================================
 # Execution & Sample Output Verification
 # =====================================================================
