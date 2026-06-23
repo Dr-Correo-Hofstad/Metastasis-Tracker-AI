@@ -1,7 +1,10 @@
 # Append these lines to your existing root Makefile mapping core target shortcuts
 # Append these validation targets to your repository root Makefile mapping configuration
-.PHONY: plot config-archive animate test-bounds compile-gif test-anticoag
+.PHONY: plot config-archive animate test-bounds compile-gif test-anticoag test-schema
 
+test-schema:
+	@echo "Executing continuous schema verification loops against YAML profiles..."
+	python3 src/fibrinolysis_verifier_core.py
 
 compile-gif:
 	@echo "Executing frame compression and compiling animated .gif payload packages..."
