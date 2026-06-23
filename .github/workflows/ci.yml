@@ -7,6 +7,17 @@ on:
     branches: [ "main" ]
 
 jobs:
+  validate-anatomy-pipeline:
+    runs-on: ubuntu-latest
+
+steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11 environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
   - name: Compile and Flatten Ingestion Spreadsheet logs
     run: |
@@ -20,18 +31,6 @@ jobs:
       chmod +x src/data/fhir/run_diagnostics.sh
       ./src/data/fhir/run_diagnostics.sh
 
-  validate-anatomy-pipeline:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Check out repository code
-      uses: actions/checkout@v4
-
-    - name: Set up Python 3.11 environment
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
     - name: Install Ingestion Dependencies
       run: |
         python -m pip install --upgrade pip
@@ -41,6 +40,9 @@ jobs:
     - name: Grant Shell Script Write Permissions
       run: chmod +x run_pipeline.sh
 
+    - name: Execute Aerodynamic Gas Jet and Reflex Verification Matrix
+      run: python3 src/respiratory_reflex_engine.py
+
     - name: Run Unified Ecosystem Pipeline Platform Driver
       run: ./run_pipeline.sh
 
@@ -49,6 +51,9 @@ jobs:
 
     - name: Execute Aerodynamic Gas Jet and Reflex Verification Matrix
       run: python3 src/respiratory_reflex_engine.py
+
+    - name: Execute Automated HDF5 Data Container Compliance Verification Checks
+      run: python3 src/pulmonary_hdf5_core.py
       
     - name: Execute End-to-End Integration Validation Checks
       run: python3 -m unittest tests/test_integration_pipeline.py
