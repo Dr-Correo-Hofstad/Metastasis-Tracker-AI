@@ -8,7 +8,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-
+python main_cli.py --ehr tests/patient_hemostasis_payload.json --export-dir outbound/
 # --- High-Performance Computing (HPC) Integration ---
 try:
     from numba import config, cuda, njit, prange
