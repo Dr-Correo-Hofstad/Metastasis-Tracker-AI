@@ -1,5 +1,16 @@
 # Append these lines to your existing root Makefile mapping core target shortcuts
-.PHONY: plot config-archive
+# Append these validation targets to your repository root Makefile mapping configuration
+.PHONY: plot config-archive animate test-bounds
+
+
+animate:
+	@echo "Compiling animated spatial tracking rotation path sequences..."
+	python3 -c "from src.voxel_coordinate_interface import OcularVoxelStructuralInterface; v=OcularVoxelStructuralInterface(); [v.inject_tracking_coordinate_node(0.5,0.5,i/10.0) for i in range(10)]; v.render_animated_rotation_sequence()"
+
+test-bounds:
+	@echo "Running programmatic unit boundary checks against 3D voxel input channels..."
+	python3 -m unittest tests/test_voxel_boundaries.py
+
 
 plot:
 	@echo "Processing packed tracking spatial coordinates arrays into 3D Voxel models..."
