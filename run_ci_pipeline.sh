@@ -19,3 +19,15 @@ else
     echo "❌ INTEGRATION FAILURE: Tracker bridge encountered an unhandled exception or failed assertions."
     exit 1
 fi
+
+echo "====================================================="
+echo "🐍 STEP 5: Verifying Species Initialization Selector..."
+echo "====================================================="
+
+# Execute the initialization test suite via the command line
+if python3 "$PROJECT_ROOT/tools/test_species_initialization.py"; then
+    echo "🚀 SELECTION VERIFIED: Species constants map cleanly at bootup workflow states!"
+else
+    echo "❌ SELECTION ERROR: Encountered unhandled exception or data mismatch during profile selection."
+    exit 1
+fi
