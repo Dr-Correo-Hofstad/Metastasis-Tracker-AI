@@ -62,3 +62,20 @@ jobs:
         echo "Commit SHA      : ${{ github.sha }}"
         echo "Status          : Verification Completed Headlessly"
         echo "====================================================="
+
+    # 8. Post-Execution Webhook Dispatch Engine
+    - name: Dispatch Pipeline Alerts to Engineering Channel
+      if: always() # Guarantees notifications fire even if a prior step crashed the runner
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.ENGINEERING_CHANNEL_WEBHOOK }}
+        SLACK_TITLE: "Pycnogonid Simulation Subsystem Build Status"
+        SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+        SLACK_ICON: "https://github.com"
+        SLACK_USERNAME: "CI-Automation-Bot"
+        SLACK_MESSAGE: |
+          *Workflow:* ${{ github.workflow }}
+          *Event Trigger:* `${{ github.event_name }}` on branch `${{ github.ref_name }}`
+          *Commit:* `${{ github.sha }}` by `@${{ github.actor }}`
+          *Result Outcome:* *${{ job.status == 'success' && '🚀 SUCCESS — All Math & Matrices Verified!' || '❌ FAILURE — Pipeline Halted on Exception!' }}*
+          *Logs and Diagnostics:* https://github.com{{ github.run_id }}
