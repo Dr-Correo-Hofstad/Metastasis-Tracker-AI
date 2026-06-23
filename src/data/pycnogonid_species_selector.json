@@ -1,0 +1,76 @@
+{
+  "pycnogonid_species_registry": {
+    "Nymphon_australe": {
+      "display_name": "Nymphon australe (Polar Sea Spider)",
+      "family": "Nymphonidae",
+      "ui_tooltip": {
+        "primary_color": "Pink",
+        "pattern_style": "Translucent Solid",
+        "hex_code": "#FFC0CB",
+        "description": "Vibrant pinkish-red translucent cuticle typical of Southern Ocean abyssal benthos."
+      },
+      "empirical_threshold_limits": {
+        "optimal_temperature_c": 1.5,
+        "temperature_bounds": [-1.8, 6.0],
+        "salinity_bounds_ppt": [33.8, 35.2],
+        "depth_range_m": [8.0, 4136.0],
+        "fecundity_baseline": 450.0,
+        "larval_egg_diameter_mm": 0.08
+      }
+    },
+    "Nymphon_gracile": {
+      "display_name": "Nymphon gracile (Slender Sea Spider)",
+      "family": "Nymphonidae",
+      "ui_tooltip": {
+        "primary_color": "Yellow",
+        "pattern_style": "Banded",
+        "hex_code": "#FFD700",
+        "description": "Bright yellow limbs with fine amber bands, optimized for hiding in shallow macroalgae."
+      },
+      "empirical_threshold_limits": {
+        "optimal_temperature_c": 12.0,
+        "temperature_bounds": [5.0, 18.0],
+        "salinity_bounds_ppt": [32.0, 35.5],
+        "depth_range_m": [0.0, 200.0],
+        "fecundity_baseline": 210.0,
+        "larval_egg_diameter_mm": 0.06
+      }
+    },
+    "Pycnogonum_littorale": {
+      "display_name": "Pycnogonum littorale (Robust Sea Spider)",
+      "family": "Pycnogonidae",
+      "ui_tooltip": {
+        "primary_color": "Brown",
+        "pattern_style": "Marbled / Rugose",
+        "hex_code": "#8B4513",
+        "description": "Dull brown to muddy-grey marbled, thickened reticulate exoskeleton mimicking sponge matrices."
+      },
+      "empirical_threshold_limits": {
+        "optimal_temperature_c": 14.0,
+        "temperature_bounds": [4.5, 22.0],
+        "salinity_bounds_ppt": [31.5, 36.0],
+        "depth_range_m": [0.0, 1262.0],
+        "fecundity_baseline": 185.0,
+        "larval_egg_diameter_mm": 0.11
+      }
+    },
+    "Anoplodactylus_evansi": {
+      "display_name": "Anoplodactylus evansi (Vibrant Soft Coral Spider)",
+      "family": "Phoxichilidiidae",
+      "ui_tooltip": {
+        "primary_color": "Yellow, Black, and Red",
+        "pattern_style": "Tri-Color Striped",
+        "hex_code": "#FF4500",
+        "description": "Intricate black and red banding accents running across neon yellow leg segments."
+      },
+      "empirical_threshold_limits": {
+        "optimal_temperature_c": 18.5,
+        "temperature_bounds": [10.0, 26.0],
+        "salinity_bounds_ppt": [33.0, 36.5],
+        "depth_range_m": [2.0, 120.0],
+        "fecundity_baseline": 95.0,
+        "larval_egg_diameter_mm": 0.05
+      }
+    }
+  }
+}
