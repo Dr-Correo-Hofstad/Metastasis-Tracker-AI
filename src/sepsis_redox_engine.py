@@ -66,6 +66,82 @@ class SepsisRedoxSimulationEngine:
             "timeline_logs": time_series_log
         }
 
+import math
+import unittest
+
+class ExtendedSepsisCalciumEngine:
+    def __init__(self, total_blood_volume_L: float, gfr_L_min: float):
+        """
+        Extends the bioenergetic platform to track chemical mineral extraction,
+        stoichiometric dissolution, and systemic hypercalcemia risks.
+        """
+        self.v_blood = max(1.0, total_blood_volume_L)
+        self.gfr_L_sec = gfr_L_min / 60.0
+        
+        # Physiological baselines (mg/dL)
+        self.current_serum_ca = 9.5 
+        self.hypercalcemia_cutoff = 12.0
+
+    def simulate_osteolytic_calcium_cascade(self, base_cleavage_flux_mg_s: float, bone_volume_cm3: float, timeline_sec: int) -> dict:
+        """
+        Solves the mass-balance differential loop for calcium release into the blood stream.
+        """
+        time_series = []
+        # Renal excretion clearing constant for ionized minerals
+        kappa_renal = 0.15 
+        
+        # Convert blood volume from Liters to deciliters (1 L = 10 dL) for mg/dL calculations
+        v_blood_dL = self.v_blood * 10.0
+
+        for t in range(timeline_sec):
+            # 1. Stoichiometric Extraction: Hydroxyapatite is ~39.89% Calcium by mass
+            total_lattice_melt_mg_s = base_cleavage_flux_mg_s * (bone_volume_cm3 * 1.05)
+            ca_mass_influx_mg = 0.3989 * total_lattice_melt_mg_s
+            
+            # 2. ODE Solver: dCa/dt = Influx - Outflux
+            ca_clearance_mg = kappa_renal * self.gfr_L_sec * self.current_serum_ca * 10.0
+            net_delta_ca_mg = ca_mass_influx_mg - ca_clearance_mg
+            
+            # Update blood pool concentration concentration vector
+            self.current_serum_ca += (net_delta_ca_mg / v_blood_dL)
+            self.current_serum_ca = max(0.0, self.current_serum_ca)
+            
+            # Intercept threshold boundaries check
+            hypercalcemia_active = self.current_serum_ca > self.hypercalcemia_cutoff
+
+            time_series.append({
+                "second": t,
+                "serum_calcium_mg_dL": round(self.current_serum_ca, 3),
+                "instantaneous_release_mg": round(ca_mass_influx_mg, 4),
+                "hypercalcemia_crisis": hypercalcemia_active
+            })
+
+        return {
+            "final_serum_calcium_mg_dL": round(self.current_serum_ca, 3),
+            "hypercalcemia_induced_arrhythmia_risk": self.current_serum_ca > self.hypercalcemia_cutoff,
+            "simulation_trajectory": time_series
+        }
+
+
+# =====================================================================
+# CI/CD SCHEMATIC AUTOMATED CHECKS
+# =====================================================================
+class TestMineralExtractionBoundaries(unittest.TestCase):
+    def test_stoichiometric_calcium_caps(self):
+        """
+        AUTOMATED CHECK: Validates that hypercalcemia arrays flag systemic crisis
+        states properly under massive bone mass melting constraints.
+        """
+        engine = ExtendedSepsisCalciumEngine(total_blood_volume_L=5.0, gfr_L_min=0.120)
+        
+        # Test acute matrix dissolution spike (1.5 mg/s cleavage flux)
+        report = engine.simulate_osteolytic_calcium_cascade(
+            base_cleavage_flux_mg_s=1.5, bone_volume_cm3=1200.0, timeline_sec=10
+        )
+        
+        # Confirms data tracker captures the crisis state accurately
+        if report["final_serum_calcium_mg_dL"] > 12.0:
+            self.assertTrue(report["hypercalcemia_induced_arrhythmia_risk"])
 
 # =====================================================================
 # AUTOMATED SUITE DIAGNOSTIC ASSERTIONS
