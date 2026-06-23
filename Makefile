@@ -1,6 +1,10 @@
 # Append these lines to your existing root Makefile mapping core target shortcuts
 # Append these validation targets to your repository root Makefile mapping configuration
-.PHONY: plot config-archive animate test-bounds compile-gif test-anticoag test-schema
+.PHONY: plot config-archive animate test-bounds compile-gif test-anticoag test-schema export-fhir
+
+export-fhir:
+	@echo "Serializing runtime hemostasis values down to HL7 FHIR R4 compliant schemas..."
+	python3 src/data/fhir/payload_writer.py
 
 test-schema:
 	@echo "Executing continuous schema verification loops against YAML profiles..."
