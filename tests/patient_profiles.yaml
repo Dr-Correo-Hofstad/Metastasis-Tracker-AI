@@ -1,0 +1,38 @@
+# Metastasis-Tracker-AI Automated Patient Profiles Cohort Configuration
+global_test_metadata:
+  suite_version: "2026.1.4"
+  default_time_steps_sec: 30
+
+patient_cohorts:
+  - profile_id: "COHORT_01_HEALTHY_ATHLETE"
+    anthropometrics:
+      height_cm: 182.0
+      weight_kg: 78.0
+      build_type: "mesomorph"
+    clinical_labs:
+      hydration_level: 1.0
+      wbc_count_uL: 6500.0
+      platelet_count_uL: 300000.0
+      clotting_factor_efficiency: 1.0
+
+  - profile_id: "COHORT_02_DEHYDRATED_THROMBOCYTOPENIC"
+    anthropometrics:
+      height_cm: 165.0
+      weight_kg: 58.0
+      build_type: "ectomorph"
+    clinical_labs:
+      hydration_level: 0.82            # Severe volume deficit
+      wbc_count_uL: 4500.0
+      platelet_count_uL: 35000.0        # Critical bleeding risk
+      clotting_factor_efficiency: 0.85
+
+  - profile_id: "COHORT_03_HEPARIN_TREATED_PATIENT"
+    anthropometrics:
+      height_cm: 170.0
+      weight_kg: 85.0
+      build_type: "endomorph"
+    clinical_labs:
+      hydration_level: 1.05
+      wbc_count_uL: 11000.0
+      platelet_count_uL: 220000.0
+      clotting_factor_efficiency: 0.15 # Pharmacologically anticoagulated
