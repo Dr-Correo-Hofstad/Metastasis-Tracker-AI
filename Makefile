@@ -1,6 +1,10 @@
 # Append these lines to your existing root Makefile mapping core target shortcuts
 # Append these validation targets to your repository root Makefile mapping configuration
-.PHONY: plot config-archive animate test-bounds compile-gif test-anticoag test-schema export-fhir compile-csv test-fhir-pipeline test-reflexes export-reflex-fhir test-local-workflow print-h5-schema parse-h5 test-hdf5-compliance visualize-pulmonary test-chart-layout deploy-wiki parse-tokens check-links scan-perfusion export-json-logs parse-cohort-stats test-checksums
+.PHONY: plot config-archive animate test-bounds compile-gif test-anticoag test-schema export-fhir compile-csv test-fhir-pipeline test-reflexes export-reflex-fhir test-local-workflow print-h5-schema parse-h5 test-hdf5-compliance visualize-pulmonary test-chart-layout deploy-wiki parse-tokens check-links scan-perfusion export-json-logs parse-cohort-stats test-checksums compile-wiki-tables
+
+compile-wiki-tables:
+	@echo "Extracting telemetry logs to generate automated wiki Markdown data tables..."
+	python3 -c "from src.data.logs.json_transaction_logger import JSONTransactionLogger; l=JSONTransactionLogger('tests/scratch_logs'); l.serialize_and_compress_log([{'ph':7.40,'cbf':250}], 'p1'); l.serialize_and_compress_log([{'ph':7.10,'cbf':85}], 'p2'); from src.data.logs.generate_wiki_tables import WikiMarkdownTableGenerator; g=WikiMarkdownTableGenerator('tests/scratch_logs', 'docs/cohort_analytics_report.md'); g.compile_stats_to_markdown_table()"
 
 parse-cohort-stats:
 	@echo "Aggregating uncorrupted compressed transaction sheets to calculate population metrics..."
