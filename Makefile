@@ -16,8 +16,8 @@ test-checksums:
 
 check-links:
 	@echo "Scanning all custom markdown documentation files for broken file path links..."
-	chmod +x tools/check_md_links.sh
-	./tools/check_md_links.sh
+	chmod +x src/check_md_links.sh
+	./src/check_md_links.sh
 
 export-json-logs:
 	@echo "Compressing raw data tables into timestamped binary GZIP JSON transaction packages..."
@@ -37,8 +37,8 @@ test-chart-layout:
 
 deploy-wiki:
 	@echo "Pushing compiled diagnostic chart assets straight to GitHub Wiki servers..."
-	chmod +x tools/upload_wiki.sh
-	./tools/upload_wiki.sh
+	chmod +x src/upload_wiki.sh
+	./src/upload_wiki.sh
 
 test-local-workflow:
 	@echo "Launching complete local validation testing workflow suite..."
@@ -92,8 +92,8 @@ test-schema:
 
 compile-gif:
 	@echo "Executing frame compression and compiling animated .gif payload packages..."
-	chmod +x tools/compile_gif.sh
-	./tools/compile_gif.sh
+	chmod +x src/compile_gif.sh
+	./src/compile_gif.sh
 
 test-anticoag:
 	@echo "Running dynamic clotting inhibition system unit verifications..."
